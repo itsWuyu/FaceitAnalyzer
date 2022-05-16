@@ -224,12 +224,7 @@ for i in nickname:
     toExcle(i, getFinal(last50))
    
 
-#test = getLast50('https://faceitanalyser.com/matches/flipse-?hub=CS:GO%205v5%20EU', 0 ,0)
-#print(test)
-#finale = getFinal(test);           
 
-
-#print(last50[0][1])
 
 
 
