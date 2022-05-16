@@ -5,12 +5,13 @@ from bs4 import BeautifulSoup
 import requests
 import re
 import json
-import pandas as pd
+import pandas as pd, numpy as np
 import xlwt
 from xlwt import Workbook
 import openpyxl
 from openpyxl import load_workbook
 from openpyxl.styles import Font
+
 
 
 
@@ -194,22 +195,51 @@ def getFinal(URL) :
 
     return final
     
-def toExcle(file_name, data):
-    
+def toExcle(file_name, data, data2 = {}):
+    #Data 5vs5
     data = pd.DataFrame(data) 
     data = data.dropna() #Drop rows with NaN
 
-    print(data)
-    data.to_excel((file_name+".xlsx"),sheet_name=file_name)    
-    wb = load_workbook((file_name+'.xlsx'))    
-    ws = wb[file_name]
-    ws['A1'] = file_name
-    ws['A1'].font = Font(bold = True)
-    ws['A7'] = 'https://faceitanalyser.com/matches/' + file_name + '?hub=CS:GO%205v5%20EU'
-    ws['A7'].font = Font(bold = True)
-    wb.save((file_name+'.xlsx'))          
+    if(not bool(data2) != True):
+        #Data Liga        
+        data2 = pd.DataFrame(data2) 
+        data2 = data2.dropna() #Drop rows with NaN
+        data = data.add(data2, fill_value=0)  
+        print(data)
+        data.to_excel((file_name+".xlsx"),sheet_name=file_name)    
+        wb = load_workbook((file_name+'.xlsx'))    
+        ws = wb[file_name]
+        ws['A1'] = file_name
+        ws['A1'].font = Font(bold = True)
+        ws['A7'] = 'https://faceitanalyser.com/matches/' + file_name + '?hub=CS:GO%205v5%20EU'
+        ws['A7'].font = Font(bold = True)         
+        ws['A8'] = 'https://faceitanalyser.com/matches/' + file_name + hub_stip
+        ws['A8'].font = Font(bold = True)
+
+        wb.save((file_name+'.xlsx'))
+    else:
+        print(data)
+        data.to_excel((file_name+".xlsx"),sheet_name=file_name)    
+        wb = load_workbook((file_name+'.xlsx'))    
+        ws = wb[file_name]
+        ws['A1'] = file_name
+        ws['A1'].font = Font(bold = True)
+        ws['A7'] = 'https://faceitanalyser.com/matches/' + file_name + '?hub=CS:GO%205v5%20EU'
+        ws['A7'].font = Font(bold = True)
+        wb.save((file_name+'.xlsx'))                  
  
+
+
+
 players = input("How many Players ? :")
+hub = input("Optional : Add different hub to search (enter hub link): ")
+hub_stip = ""
+
+if(len(hub) != 0):
+    for x in range(hub.find("?hub="), len(hub)): #strip string
+        hub_stip += hub[x]
+    
+
 nickname = []
 for i in range(int(players)) :
     username = input("Faceit Username " + str(i+1) + " :")
@@ -219,14 +249,17 @@ for i in range(int(players)) :
 for i in nickname:
     print('\n'+i + '\n')
     URL = 'https://faceitanalyser.com/matches/' + i + '?hub=CS:GO%205v5%20EU'
-    print(URL)
-    last50 = getLast50(URL)   
-    toExcle(i, getFinal(last50))
+    if(len(hub_stip) != 0):
+        URL2 = 'https://faceitanalyser.com/matches/' + i + hub_stip
+        last_5v5 = getLast50(URL)  
+        last_hub =  getLast50(URL2) 
+        print(URL + '\n' + URL2)
+        toExcle(i, getFinal(last_5v5), getFinal(last_hub) )
+    else :
+        print(URL + '\n')
+        last_5v5 = getLast50(URL)    
+        toExcle(i, getFinal(last_5v5))
    
-
-
-
-
 
 
 
