@@ -80,7 +80,7 @@ def getLast50(URL, URL2=''): #URL to site ; lenght of for loop ; both hubs for s
     #[Datum, Map Name , HLTV, Win or Lose, TotalScore, Kills] cell format 
     if(len(cells2) != 0):
         cells = cells + cells2
-        print('cells combined')
+        print('Multiple hubs where analyzed')
     #print('\n')
     #print(cells2)  
     #print(json.dumps(cells, indent = 4))            
@@ -237,7 +237,9 @@ while loop == True:
                     print(URL + '\n')
                     last_5v5 = getLast50(URL)    
                     toExcle(team, getFinal(last_5v5), i)
-            loop = False        
+            loop = False
+            print('This window will close automaticly in 3 seconds')
+            time.sleep(3)        
             sys.exit()
 
 
