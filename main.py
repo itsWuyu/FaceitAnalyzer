@@ -216,7 +216,7 @@ while loop == True:
         if(len(hub) == 0 or validators.url(hub) == True):
             hub_stip = stripHubLink(hub)
             nickname = []
-            team = ""
+            team = "Analzye1"
             if(players > 1):
                 team = str(input("Please enter a team name (optional)"))
                 if(len(team) == 0):
