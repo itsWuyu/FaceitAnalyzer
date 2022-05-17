@@ -1,5 +1,6 @@
 # Import libraries
 from asyncio.windows_events import NULL
+from genericpath import exists
 from turtle import clear
 from bs4 import BeautifulSoup
 import requests
@@ -11,55 +12,30 @@ from xlwt import Workbook
 import openpyxl
 from openpyxl import load_workbook
 from openpyxl.styles import Font
+import os
+import validators
+import time
+import sys
 
 
-
-
-def getMaps(URL):
-     #request website
-
-    page = requests.get(URL)
+def getLast50(URL, URL2=''): #URL to site ; lenght of for loop ; both hubs for search ; cells list of given elements
     
-    # load the page content
-    website = page.content
-    
-
-    soup = BeautifulSoup(website, "html.parser")
-
-    div = soup.find("div", {"id": "view2_stats"})
-    stable = div.find('table')
-    cells = [ ]
-    rows = stable.findAll('tr')
-    for tr in rows[1:10]:
-        # Process the body of the table
-        row = []
-        td = tr.findAll('td')
-        #Map
-        csmap = re.sub(r"[^a-zA-Z0-9_]","",td[0].text) #unnotige sachen weg machen
-        row.append(csmap)  
-        #Winrate
-        row.append( td[4].text)
-        #HS%
-        row.append( td[8].text) 
-        #KPR    
-        row.append( td[9].text)
-        #HLTV
-        row.append( td[11].text)    
-        cells.append( row )
-     #[Map Name, Winrate , HS%, KPR, HLTV ] cell format   
-    return cells
-
-def getLast50(URL): #URL to site ; lenght of for loop ; both hubs for search ; cells list of given elements
-
+    cells2= []
+    #print('\n URL : ' + URL2 + '\n')
+    #print(cells2)
+    if(len(URL2) != 0):
+    # print('recursion' + '\n')    
+        cells2 = getLast50(URL2)
     #request website
     page = requests.get(URL)    
     # load the page content
     website = page.content   
     soup = BeautifulSoup(website, "html.parser")
     stable = soup.find('table')
+    if(stable == None): #If player didnt play a hub the programm will return a empty list
+        return []
     cells = [ ]
-    rows = stable.findAll('tr')
-   
+    rows = stable.findAll('tr')  
 
     for tr in rows[1:51]:
         # Process the body of the table
@@ -70,13 +46,13 @@ def getLast50(URL): #URL to site ; lenght of for loop ; both hubs for search ; c
         #Map  
         csmap = re.sub(r"[^a-zA-Z0-9_]","",td[3].text) #unnotige sachen weg machen
         row.append(csmap)
-     
+    
 
         #HLTV
         row.append( td[10].text)
         #Win or Lose
-        (td[11].text).find('(')
-        if(td[11].text[(td[11].text).find('(')+1] == '+'):
+
+        if((td[11].text[(td[11].text).find('(')+1] == '+') or ('positive' in td[11]['class']) == True): #Check if Elo is + or td[11] has the attr 'positiv' which means it was a win
             row.append('Win')
         else : row.append('Lose')  
 
@@ -99,10 +75,15 @@ def getLast50(URL): #URL to site ; lenght of for loop ; both hubs for search ; c
 
         row.append(td[5].text)    
         
-        #print(ct  +  " & "  + t)
 
         cells.append( row )
-    #[Datum, Map Name , HLTV, Win or Lose, TotalScore, Kills] cell format      
+    #[Datum, Map Name , HLTV, Win or Lose, TotalScore, Kills] cell format 
+    if(len(cells2) != 0):
+        cells = cells + cells2
+        print('cells combined')
+    #print('\n')
+    #print(cells2)  
+    #print(json.dumps(cells, indent = 4))            
     return cells
 
 
@@ -191,75 +172,78 @@ def getFinal(URL) :
             x['KillsPerRound'] = round(x['KillsPerRound'] / x['TotalRounds'] , 2)
             x.pop('HLTVTotal')
 
-
-
     return final
     
-def toExcle(file_name, data, data2 = {}):
+def toExcle(file_name, data, player_name = '',):
     #Data 5vs5
     data = pd.DataFrame(data) 
-    data = data.dropna() #Drop rows with NaN
+    data = data.dropna() #Drop rows with NaN  
+    print(data)
 
-    if(not bool(data2) != True):
-        #Data Liga        
-        data2 = pd.DataFrame(data2) 
-        data2 = data2.dropna() #Drop rows with NaN
-        data = data.add(data2, fill_value=0)  
-        print(data)
-        data.to_excel((file_name+".xlsx"),sheet_name=file_name)    
-        wb = load_workbook((file_name+'.xlsx'))    
-        ws = wb[file_name]
-        ws['A1'] = file_name
-        ws['A1'].font = Font(bold = True)
-        ws['A7'] = 'https://faceitanalyser.com/matches/' + file_name + '?hub=CS:GO%205v5%20EU'
-        ws['A7'].font = Font(bold = True)         
-        ws['A8'] = 'https://faceitanalyser.com/matches/' + file_name + hub_stip
-        ws['A8'].font = Font(bold = True)
-
-        wb.save((file_name+'.xlsx'))
-    else:
-        print(data)
-        data.to_excel((file_name+".xlsx"),sheet_name=file_name)    
-        wb = load_workbook((file_name+'.xlsx'))    
-        ws = wb[file_name]
-        ws['A1'] = file_name
-        ws['A1'].font = Font(bold = True)
-        ws['A7'] = 'https://faceitanalyser.com/matches/' + file_name + '?hub=CS:GO%205v5%20EU'
-        ws['A7'].font = Font(bold = True)
-        wb.save((file_name+'.xlsx'))                  
- 
-
-
-
-players = input("How many Players ? :")
-hub = input("Optional : Add different hub to search (enter hub link): ")
-hub_stip = ""
-
-if(len(hub) != 0):
-    for x in range(hub.find("?hub="), len(hub)): #strip string
-        hub_stip += hub[x]
-    
-
-nickname = []
-for i in range(int(players)) :
-    username = input("Faceit Username " + str(i+1) + " :")
-    nickname.append(username)
-
-
-for i in nickname:
-    print('\n'+i + '\n')
-    URL = 'https://faceitanalyser.com/matches/' + i + '?hub=CS:GO%205v5%20EU'
-    if(len(hub_stip) != 0):
-        URL2 = 'https://faceitanalyser.com/matches/' + i + hub_stip
-        last_5v5 = getLast50(URL)  
-        last_hub =  getLast50(URL2) 
-        print(URL + '\n' + URL2)
-        toExcle(i, getFinal(last_5v5), getFinal(last_hub) )
-    else :
-        print(URL + '\n')
-        last_5v5 = getLast50(URL)    
-        toExcle(i, getFinal(last_5v5))
    
+    if(exists(os.path.abspath(os.getcwd()) + "/" + file_name + ".xlsx")):
+        with pd.ExcelWriter(file_name + ".xlsx",mode="a",engine="openpyxl",if_sheet_exists="overlay") as writer:
+         data.to_excel(writer, sheet_name=file_name, startrow=writer.sheets[file_name].max_row+2, index_label = player_name )
+     
+   
+    else:
+        data.to_excel(file_name+".xlsx", sheet_name=file_name,  index_label = player_name )             
+    
+def stripHubLink(hub):
+    cleanURl= ''
+    if(len(hub) != 0):
+        for x in range(hub.find("?hub="), len(hub)): #strip string
+            cleanURl += hub[x]
+    return cleanURl     
+
+#test cases : 
+'''''
+URL2 = 'https://faceitanalyser.com/matches/itsWuyu?hub=Liga%201%20SS%202022'
+URL = 'https://faceitanalyser.com/matches/itsWuyu?hub=CS:GO%205v5%20EU'
+
+last_5v5 = getLast50(URL, URL2) 
+getFinal(last_5v5)
+#toExcle('AXIS', getFinal(last_5v5), 'itsWuyu')
+
+'''''
+#user input: 
+loop = True
+while loop == True:
+    print("Welcome the stats analyzer")
+    try:
+        players = int( input("How many players ? :"))
+        hub = input("Optional : Add different hub to search (enter hub link): ")
+        if(len(hub) == 0 or validators.url(hub) == True):
+            hub_stip = stripHubLink(hub)
+            nickname = []
+            team = ""
+            if(players > 1):
+                team = str(input("Please enter a team name (optional)"))
+                if(len(team) == 0):
+                    team = "Analzye1"
+            for i in range(int(players)) :
+                username = input("Faceit Username " + str(i+1) + " :")
+                nickname.append(username)
+            for i in nickname:
+                print('\n'+i + '\n')
+                URL = 'https://faceitanalyser.com/matches/' + i + '?hub=CS:GO%205v5%20EU'
+                if(len(hub_stip) != 0):
+                    URL2 = 'https://faceitanalyser.com/matches/' + i + hub_stip
+                    last_5v5 = getLast50(URL, URL2)          
+                    print(URL + '\n' + URL2)
+                    toExcle(team, getFinal(last_5v5), i)
+                 
+                else :
+                    print(URL + '\n')
+                    last_5v5 = getLast50(URL)    
+                    toExcle(team, getFinal(last_5v5), i)
+            loop = False        
+            sys.exit()
 
 
-
+        else:
+            print("Please enter a correct hub url")
+            continue    
+    except ValueError:
+        print("Please enter a number.")
+        continue
