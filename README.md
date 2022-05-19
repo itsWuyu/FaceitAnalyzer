@@ -11,13 +11,13 @@ The Programm helps you to see where your strengths and weaknesses are by scannin
 Install auto-py-to-exe
 
 ```bash
-  pip install auto-py-to-exe
+pip install auto-py-to-exe
 ```
 
 Run auto-py-to-exe
 
 ```bash
-  auto-py-to-exe -nu .\main.py
+auto-py-to-exe -nu .\main.py
 ```
 
 Follow auto-py-to-exe instructions
